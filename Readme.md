@@ -1,6 +1,9 @@
 ## What's this ?
 
-noshared_ptr is the unsharable version of std::shared_ptr,
+noshared_ptr is the unsharable version of std::shared_ptr.
+
+After I used this library, 90% c++ memory bugs disappeared !
+
 
 ```
 

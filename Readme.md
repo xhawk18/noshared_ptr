@@ -30,7 +30,7 @@ The usage is similar as shared_ptr/weak_ptr, with exception that we can not copy
 using namespace nstd;
 
 void use_noweak_ptr(noweak_ptr<int> w) {
-    noshared_ptr<int> s = w.lock();
+    locked_ptr<int> s(w); // instead of w.lock()
     printf("get value = %d\n", *s);
 }
 

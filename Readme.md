@@ -3,19 +3,22 @@
 noshared_ptr is the unsharable version of std::shared_ptr,
 
 ```
-// smart pointer is uncopiable as std::unique_ptr,
-// but works as std::shared_ptr,
-// with which we can has an associated weak pointer.
+
+// smart pointer which is uncopiable as std::unique_ptr,
+// but works as std::shared_ptr, with which we can has an associated weak pointer.
+
 nstd::noshared_ptr<T> 
 
+
 // weak smart pointer for noshared_ptr<T>
+
 nstd::noweak_ptr<T>
 
 ```
 
 ## Usage
 
-The usage is similar as shared_ptr/weak_ptr,  except that we can not copy (share) the noshared_ptr.
+The usage is similar as shared_ptr/weak_ptr, with exception that we can not copy (share) the noshared_ptr.
 
 ```
 #include <stdio.h>

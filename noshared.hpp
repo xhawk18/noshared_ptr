@@ -1,5 +1,5 @@
-#ifndef INC_NOSHARED_HPP
-#define INC_NOSHARED_HPP
+#ifndef INC_NOSHARED_HPP_
+#define INC_NOSHARED_HPP_
 #pragma once
 
 #include <iostream>
@@ -80,12 +80,22 @@ private:
     noshared_ptr(const std::shared_ptr<T> &right) noexcept 
         : sptr_(right) {
     }
-
+    template <class T2>
+    friend class noshared_ptr;
     template <class T2>
     friend class noweak_ptr;
     template <class T2>
     friend class nocopy_ptr;
+
+    template<typename T1, typename T2>
+    friend noshared_ptr<T1> dynamic_pointer_cast(noshared_ptr<T2> &&other);
 };
+
+template<typename T1, typename T2>
+noshared_ptr<T1> dynamic_pointer_cast(noshared_ptr<T2> &&other) {
+    const std::shared_ptr<T1> &sptr = std::dynamic_pointer_cast<T1>(std::move(other.sptr_));
+    return noshared_ptr<T1>(sptr);
+}
 
 
 // FUNCTION TEMPLATE make_unique
@@ -227,7 +237,7 @@ public:
 
     template <class T2, typename std::enable_if<std::is_convertible<T2 *, T *>::value, int>::type = 0>
     noweak_ptr(noweak_ptr<T2> &&other) noexcept
-        : wptr_(std::move(other)) {
+        : wptr_(std::move(other.wptr_)) {
     }
 
     ~noweak_ptr() noexcept {
@@ -276,9 +286,24 @@ public:
     noshared_ptr<T> lock() const noexcept { // convert to shared_ptr
         return noshared_ptr<T>(wptr_.lock());
     }
+
+    template <typename T2>
+    bool owner_before(const noweak_ptr<T2> &right) const noexcept { // compare addresses of manager objects
+        return wptr_.owner_before(right.wptr_);
+    }
 private:
     std::weak_ptr<T> wptr_;
+    template <class T2>
+    friend class noweak_ptr;
 };
+
+
+template <class Elem, class Traits, class T>
+std::basic_ostream<Elem, Traits> &operator<<(std::basic_ostream<Elem, Traits> &out, const noshared_ptr<T> &ptr) {
+    // write contained pointer to stream
+    return out << ptr.get();
+}
+
 
 }
 

@@ -5,10 +5,8 @@
 #include <iostream>
 #include <memory>
 
-// define NSTD_USE_LOCKED_PTR to enable lock function for weak pointer
-// #define NSTD_USE_LOCKED_PTR
-
 namespace nstd {
+
 
 
 template <typename T>
@@ -73,6 +71,11 @@ public:
 
     void reset(pointer ptr = nullptr) noexcept {
         sptr_.reset(ptr);
+    }
+
+    template <typename T2>
+    bool owner_before(const noshared_ptr<T2> &right) const noexcept { // compare addresses of manager objects
+        return sptr_.owner_before(right.sptr_);
     }
 
     noshared_ptr(const noshared_ptr &) = delete;
@@ -204,9 +207,6 @@ bool operator<=(nullptr_t left, const noshared_ptr<T> &right) {
     return !(right < left);
 }
 
-template <typename T>
-class locked_ptr;
-
 // noweak_ptr
 
 // CLASS TEMPLATE noweak_ptr
@@ -223,11 +223,6 @@ public:
 
     template <class T2, typename std::enable_if<std::is_convertible<T2 *, T *>::value, int>::type = 0>
     noweak_ptr(const noshared_ptr<T2> &other) noexcept
-        : wptr_(other.sptr_) {
-    }
-    
-    template <class T2, typename std::enable_if<std::is_convertible<T2 *, T *>::value, int>::type = 0>
-    noweak_ptr(const locked_ptr<T2> &other) noexcept
         : wptr_(other.sptr_) {
     }
 
@@ -288,11 +283,9 @@ public:
         return wptr_.expired();
     }
 
-#ifdef NSTD_ENABLE_WEAK_LOCK
     noshared_ptr<T> lock() const noexcept { // convert to shared_ptr
         return noshared_ptr<T>(wptr_.lock());
     }
-#endif
 
     template <typename T2>
     bool owner_before(const noweak_ptr<T2> &right) const noexcept { // compare addresses of manager objects
@@ -300,212 +293,11 @@ public:
     }
 private:
     std::weak_ptr<T> wptr_;
-    friend class locked_ptr<T>;
     template <class T2>
-    friend class noweak_ptr;
-
-};
-
-template <typename T>
-class locked_ptr { // non-copyable pointer to an object
-public:
-    using pointer = T*;
-    using element_type = T;
-
-    explicit locked_ptr(const noweak_ptr<T> &wptr) noexcept
-        : sptr_(wptr.wptr_.lock()) {}
-
-    typename std::add_lvalue_reference<T>::type operator*() const noexcept /* strengthened */ {
-        return *sptr_;
-    }
-
-    pointer operator->() const noexcept {
-        return sptr_.operator->();
-    }
-
-    pointer get() const noexcept {
-        return sptr_.get();
-    }
-
-    explicit operator bool() const noexcept {
-        return sptr_.operator bool();
-    }
-
-    void reset(pointer ptr = nullptr) noexcept {
-        sptr_.reset(ptr);
-    }
-
-    locked_ptr() = delete;
-    locked_ptr(const locked_ptr &) = delete;
-    locked_ptr(locked_ptr &&) = delete;
-    locked_ptr &operator=(const locked_ptr &) = delete;
-
-private:
-    std::shared_ptr<T> sptr_;
-    locked_ptr(const std::shared_ptr<T> &right) noexcept 
-        : sptr_(right) {
-    }
+    friend class noshared_ptr;
     template <class T2>
     friend class noweak_ptr;
 };
-
-
-template <class T1, class T2>
-bool operator==(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    return left.get() == right.get();
-}
-
-template <class T1, class T2>
-bool operator!=(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    return !(left == right);
-}
-
-template <class T1, class T2>
-bool operator<(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    using Ptr1 = typename locked_ptr<T1>::pointer;
-    using Ptr2 = typename locked_ptr<T2>::pointer;
-    using Common = typename std::common_type<Ptr1, Ptr2>::type;
-    return std::less<Common>{}(left.get(), right.get());
-}
-
-template <class T1, class T2>
-bool operator>=(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    return !(left < right);
-}
-
-template <class T1, class T2>
-bool operator>(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    return right < left;
-}
-
-template <class T1, class T2>
-bool operator<=(const locked_ptr<T1> &left, const locked_ptr<T2> &right) {
-    return !(right < left);
-}
-
-template <class T>
-bool operator==(const locked_ptr<T> &left, nullptr_t) noexcept {
-    return !left;
-}
-
-template <class T>
-bool operator==(nullptr_t, const locked_ptr<T> &right) noexcept {
-    return !right;
-}
-
-template <class T>
-bool operator!=(const locked_ptr<T> &left, nullptr_t right) noexcept {
-    return !(left == right);
-}
-
-template <class T>
-bool operator!=(nullptr_t left, const locked_ptr<T> &right) noexcept {
-    return !(left == right);
-}
-
-template <class T>
-bool operator<(const locked_ptr<T> &left, nullptr_t right) {
-    using Ptr = typename locked_ptr<T>::pointer;
-    return std::less<Ptr>{}(left.get(), right);
-}
-
-template <class T>
-bool operator<(nullptr_t left, const locked_ptr<T> &right) {
-    using Ptr = typename locked_ptr<T>::pointer;
-    return std::less<Ptr>{}(left, right.get());
-}
-
-template <class T>
-bool operator>=(const locked_ptr<T> &left, nullptr_t right) {
-    return !(left < right);
-}
-
-template <class T>
-bool operator>=(nullptr_t left, const locked_ptr<T> &right) {
-    return !(left < right);
-}
-
-template <class T>
-bool operator>(const locked_ptr<T> &left, nullptr_t right) {
-    return right < left;
-}
-
-template <class T>
-bool operator>(nullptr_t left, const locked_ptr<T> &right) {
-    return right < left;
-}
-
-template <class T>
-bool operator<=(const locked_ptr<T> &left, nullptr_t right) {
-    return !(right < left);
-}
-
-template <class T>
-bool operator<=(nullptr_t left, const locked_ptr<T> &right) {
-    return !(right < left);
-}
-
-template <class T>
-bool operator==(const locked_ptr<T> &left, const noshared_ptr<T> &right) noexcept {
-    return left.get() == right.get();
-}
-
-template <class T>
-bool operator==(const noshared_ptr<T> &left, const locked_ptr<T> &right) noexcept {
-    return left.get() == right.get();
-}
-
-template <class T>
-bool operator!=(const locked_ptr<T> &left, const noshared_ptr<T> &right) noexcept {
-    return !(left == right);
-}
-
-template <class T>
-bool operator!=(const noshared_ptr<T> & left, const locked_ptr<T> &right) noexcept {
-    return !(left == right);
-}
-
-template <class T>
-bool operator<(const locked_ptr<T> &left, const noshared_ptr<T> & right) {
-    using Ptr = typename locked_ptr<T>::pointer;
-    return std::less<Ptr>{}(left.get(), right.get());
-}
-
-template <class T>
-bool operator<(const noshared_ptr<T> & left, const locked_ptr<T> &right) {
-    using Ptr = typename locked_ptr<T>::pointer;
-    return std::less<Ptr>{}(left.get(), right.get());
-}
-
-template <class T>
-bool operator>=(const locked_ptr<T> &left, const noshared_ptr<T> & right) {
-    return !(left < right);
-}
-
-template <class T>
-bool operator>=(const noshared_ptr<T> & left, const locked_ptr<T> &right) {
-    return !(left < right);
-}
-
-template <class T>
-bool operator>(const locked_ptr<T> &left, const noshared_ptr<T> & right) {
-    return right < left;
-}
-
-template <class T>
-bool operator>(const noshared_ptr<T> & left, const locked_ptr<T> &right) {
-    return right < left;
-}
-
-template <class T>
-bool operator<=(const locked_ptr<T> &left, const noshared_ptr<T> & right) {
-    return !(right < left);
-}
-
-template <class T>
-bool operator<=(const noshared_ptr<T> & left, const locked_ptr<T> &right) {
-    return !(right < left);
-}
 
 
 template <class Elem, class Traits, class T>
@@ -517,13 +309,7 @@ std::basic_ostream<Elem, Traits> &operator<<(std::basic_ostream<Elem, Traits> &o
 template <class Elem, class Traits, class T>
 std::basic_ostream<Elem, Traits> &operator<<(std::basic_ostream<Elem, Traits> &out, const noweak_ptr<T> &ptr) {
     // write contained pointer to stream
-    return out << locked_ptr<T>(ptr).get();
-}
-
-template <class Elem, class Traits, class T>
-std::basic_ostream<Elem, Traits> &operator<<(std::basic_ostream<Elem, Traits> &out, const locked_ptr<T> &ptr) {
-    // write contained pointer to stream
-    return out << ptr.get();
+    return out << ptr.lock().get();
 }
 
 }

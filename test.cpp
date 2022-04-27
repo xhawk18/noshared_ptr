@@ -1,19 +1,11 @@
 #include <stdio.h>
 #include <mutex>
 
-// define NSTD_USE_LOCKED_PTR to enable lock function for weak pointer
-// #define NSTD_USE_LOCKED_PTR
 #include "noshared.hpp"
 using namespace nstd;
 
 void use_noweak_ptr(noweak_ptr<int> w) {
-
-    // By default w.lock() is disabled, please use locked_ptr instread.
-    // To enable w.lock(), we need "#define NSTD_USE_LOCKED_PTR"
-    // noshared_ptr<int> s = w.lock();
-
-    locked_ptr<int> s(w);
-
+    noshared_ptr<int> s = w.lock();
     printf("get value = %d\n", *s);
 }
 

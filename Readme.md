@@ -19,9 +19,6 @@ nstd::noshared_ptr<T>
 // weak pointer for noshared_ptr<T>
 nstd::noweak_ptr<T>
 
-// construct instance from weak pointer
-nstd::locked_ptr<T>
-
 ```
 
 ## Usage
@@ -35,7 +32,7 @@ The usage is similar as shared_ptr/weak_ptr, with exception that we can not copy
 using namespace nstd;
 
 void use_noweak_ptr(noweak_ptr<int> w) {
-    locked_ptr<int> s(w); // instead of w.lock()
+    noshared_ptr<int> s = w.lock();
     printf("get value = %d\n", *s);
 }
 

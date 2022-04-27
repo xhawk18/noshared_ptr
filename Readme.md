@@ -3,7 +3,9 @@ What's this ?
 
 noshared_ptr is the unsharable version of std::shared_ptr.
 
-<center><b><i>"After I used this library, 90% c++ memory bugs disappeared !"</i></b></center> <a href="https://github.com/xhawk18/noshared_ptr">- by TreeNewBee</a>
+<b><i>"After I used this library, 90% c++ memory bugs disappeared !"</i></b> <a href="https://github.com/xhawk18/noshared_ptr">- by TreeNewBee</a>
+
+<b><i>"Do not share a pointer by shared_ptr, share it by weak_ptr !"</i></b> <a href="https://github.com/xhawk18/noshared_ptr">- by NewBeeGui</a>
 
 ------------
 

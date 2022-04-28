@@ -7,7 +7,11 @@
 
 namespace nstd {
 
-
+enum struct noshared_type {
+    kNormal,
+    kLocked,
+    kWeak
+};
 
 template <typename T>
 class noshared_ptr { // non-copyable pointer to an object
@@ -15,24 +19,30 @@ public:
     using pointer = T*;
     using element_type = T;
 
-    constexpr noshared_ptr() noexcept : sptr_() {}
+    constexpr noshared_ptr() noexcept
+        : type_(noshared_type::kNormal)
+        , sptr_() {}
 
-    constexpr noshared_ptr(nullptr_t) noexcept : sptr_() {}
+    constexpr noshared_ptr(nullptr_t) noexcept
+        : type_(noshared_type::kNormal)
+        , sptr_() {}
 
     noshared_ptr &operator=(nullptr_t) noexcept {
         reset();
         return *this;
     }
 
-    explicit noshared_ptr(pointer ptr) noexcept : sptr_(ptr) {}
+    explicit noshared_ptr(pointer ptr) noexcept
+        : type_(noshared_type::kNormal),
+        sptr_(ptr) {}
 
     noshared_ptr(noshared_ptr &&right) noexcept
-        : sptr_(std::move(right.sptr_)) {}
+        : noshared_ptr(construct(std::move(right)), 0) {}
 
     template <class T2,
         typename std::enable_if<std::is_convertible<typename noshared_ptr<T2>::pointer, pointer>::value, int>::type = 0>
     noshared_ptr(noshared_ptr<T2> &&right) noexcept
-        : sptr_(std::move(right.sptr_)) {}
+        : noshared_ptr(construct2(std::move(right)), 0) {}
 
     template <class T2,
         typename std::enable_if<std::is_convertible<typename noshared_ptr<T2>::pointer, pointer>::value, int>::type = 0>
@@ -47,44 +57,96 @@ public:
     }
 
     void swap(noshared_ptr &right) noexcept {
+        std::swap(this->type_, right.type_);
+        std::swap(this->wptr_, right.wptr_);
         std::swap(this->sptr_, right.sptr_);
     }
 
     ~noshared_ptr() noexcept {
     }
 
-    typename std::add_lvalue_reference<T>::type operator*() const noexcept /* strengthened */ {
-        return *sptr_;
+    typename std::add_lvalue_reference<T>::type operator*() const /* strengthened */ {
+        return *get();
     }
 
     pointer operator->() const noexcept {
-        return sptr_.operator->();
+        return get();
     }
 
     pointer get() const noexcept {
-        return sptr_.get();
+        return (type_ == noshared_type::kWeak ? wptr_.lock() : sptr_).get();
     }
 
     explicit operator bool() const noexcept {
-        return sptr_.operator bool();
+        return (type_ == noshared_type::kWeak ? wptr_.lock() : sptr_).operator bool();
     }
 
     void reset(pointer ptr = nullptr) noexcept {
+        type_ = noshared_type::kNormal;
         sptr_.reset(ptr);
+        wptr_.reset();
     }
 
     template <typename T2>
     bool owner_before(const noshared_ptr<T2> &right) const noexcept { // compare addresses of manager objects
-        return sptr_.owner_before(right.sptr_);
+        const std::weak_ptr<T> &x = (type_ == noshared_type::kWeak ? wptr_ : sptr_);
+        const std::weak_ptr<T> &y = (right.type_ == noshared_type::kWeak ? right.wptr_ : right.sptr_);
+        return x.owner_before(right.y);
     }
 
     noshared_ptr(const noshared_ptr &) = delete;
     noshared_ptr &operator=(const noshared_ptr &) = delete;
 private:
+
+    noshared_type type_;
     std::shared_ptr<T> sptr_;
-    noshared_ptr(const std::shared_ptr<T> &right) noexcept 
-        : sptr_(right) {
+    std::weak_ptr<T> wptr_;
+
+    noshared_ptr(noshared_type type, const std::shared_ptr<T> &sptr, const std::weak_ptr<T> &wptr) noexcept
+        : type_(type)
+        , sptr_(sptr)
+        , wptr_(wptr) {
     }
+    
+    noshared_ptr(const noshared_ptr &other, int /*dummy */)
+        : type_(std::move(other.type_))
+        , sptr_(std::move(other.sptr_))
+        , wptr_(std::move(other.wptr_)) {
+    }
+
+    static noshared_ptr construct(noshared_ptr &&other) {
+        if(other.type_ == noshared_type::kNormal) {
+            std::shared_ptr<T> sptr = std::move(other.sptr_);
+            return noshared_ptr(noshared_type::kNormal, sptr, {});
+        }
+        else if(other.type_ == noshared_type::kLocked) {
+            std::weak_ptr<T> wptr = other.sptr_; // not move sptr_
+            return noshared_ptr(noshared_type::kWeak, {}, wptr);
+        }
+        else /* if(other.type_ == noshared_type::kWeak) */ {
+            std::weak_ptr<T> wptr = std::move(other.wptr_);
+            return noshared_ptr(noshared_type::kWeak, {}, wptr);
+        }
+    }  
+    
+    template<typename T2>
+    static noshared_ptr construct2(noshared_ptr<T2> &&other) {
+        if(other.type_ == noshared_type::kNormal) {
+            std::shared_ptr<T> sptr = std::dynamic_pointer_cast<T>(std::move(other.sptr_));
+            return noshared_ptr(noshared_type::kNormal, sptr, {});
+        }
+        else if(other.type_ == noshared_type::kLocked) {
+            std::shared_ptr<T> sptr = std::dynamic_pointer_cast<T>(other.sptr_); // not move sptr_
+            std::weak_ptr<T> wptr = sptr;
+            return noshared_ptr(noshared_type::kWeak, {}, wptr);
+        }
+        else /* if(other.type_ == noshared_type::kWeak) */ {
+            std::weak_ptr<T> wptr = std::move(other.wptr_);
+            return noshared_ptr(noshared_type::kWeak, {}, wptr);
+        }
+    }  
+    
+
     template <class T2>
     friend class noshared_ptr;
     template <class T2>
@@ -96,8 +158,7 @@ private:
 
 template<typename T1, typename T2>
 noshared_ptr<T1> dynamic_pointer_cast(noshared_ptr<T2> &&other) {
-    const std::shared_ptr<T1> &sptr = std::dynamic_pointer_cast<T1>(std::move(other.sptr_));
-    return noshared_ptr<T1>(sptr);
+    return noshared_ptr<T1>::construct2(std::move(other));
 }
 
 
@@ -284,7 +345,7 @@ public:
     }
 
     noshared_ptr<T> lock() const noexcept { // convert to shared_ptr
-        return noshared_ptr<T>(wptr_.lock());
+        return noshared_ptr<T>(noshared_type::kLocked, wptr_.lock(), {});
     }
 
     template <typename T2>
@@ -310,6 +371,20 @@ template <class Elem, class Traits, class T>
 std::basic_ostream<Elem, Traits> &operator<<(std::basic_ostream<Elem, Traits> &out, const noweak_ptr<T> &ptr) {
     // write contained pointer to stream
     return out << ptr.lock().get();
+}
+
+// Alias ...
+
+template<typename T>
+using unique_ptr = noshared_ptr<T>;
+
+template<typename T>
+using observer_ptr = noweak_ptr<T>;
+
+// FUNCTION TEMPLATE make_unique
+template <class T, class... Types>
+unique_ptr<T> make_unique(Types&&... _Args) { // make a noshared_ptr
+    return unique_ptr<T>(new T(std::forward<Types>(_Args)...));
 }
 
 }

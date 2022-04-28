@@ -47,6 +47,7 @@ The usage is similar as shared_ptr/weak_ptr, with some exceptions --
 ```
 
 2. the pointer returned by noweak_ptr::lock() can not be moved.
+
 ```
     observer_ptr<int> w = s2;
     unique_ptr<int> s3 = w.lock();

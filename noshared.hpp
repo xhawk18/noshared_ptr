@@ -284,7 +284,7 @@ public:
 
     template <class T2, typename std::enable_if<std::is_convertible<T2 *, T *>::value, int>::type = 0>
     noweak_ptr(const noshared_ptr<T2> &other) noexcept
-        : wptr_(other.sptr_) {
+        : wptr_(other.type_ == noshared_type::kWeak ? other.wptr_ : other.sptr_) {
     }
 
     template <class T2, typename std::enable_if<std::is_convertible<T2 *, T *>::value, int>::type = 0>

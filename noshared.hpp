@@ -91,7 +91,7 @@ public:
     bool owner_before(const noshared_ptr<T2> &right) const noexcept { // compare addresses of manager objects
         const std::weak_ptr<T> &x = (type_ == noshared_type::kWeak ? wptr_ : sptr_);
         const std::weak_ptr<T> &y = (right.type_ == noshared_type::kWeak ? right.wptr_ : right.sptr_);
-        return x.owner_before(right.y);
+        return x.owner_before(y);
     }
 
     noshared_ptr(const noshared_ptr &) = delete;

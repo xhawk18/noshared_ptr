@@ -141,8 +141,9 @@ private:
             return noshared_ptr(noshared_type::kWeak, {}, wptr);
         }
         else /* if(other.type_ == noshared_type::kWeak) */ {
-            std::weak_ptr<T> wptr = std::move(other.wptr_);
-            return noshared_ptr(noshared_type::kWeak, {}, wptr);
+            std::weak_ptr<T2> wptr = std::move(other.wptr_);
+            std::weak_ptr<T> wptr2 = std::dynamic_pointer_cast<T>(wptr.lock());
+            return noshared_ptr(noshared_type::kWeak, {}, wptr2);
         }
     }  
     

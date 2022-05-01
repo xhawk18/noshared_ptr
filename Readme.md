@@ -46,15 +46,19 @@ nstd::noshared_ptr<T>
 // noshared_ptr的weak引用指针
 nstd::noweak_ptr<T>
 
-// 以上两个类的别名
-nstd::unique_ptr<T>    // nstd::noshared_ptr<T> 的别名
-nstd::observer_ptr<T>  // nstd::noweak_ptr<T> 的别名
+// 创建一个智能指针
+noshared_ptr<T> nstd::make_noshared(Args...)
 
+
+// 以上类和函数的别名（效果和以上类/函数完全等价）
+nstd::unique_ptr<T>         // nstd::noshared_ptr<T> 的别名
+nstd::observer_ptr<T>       // nstd::noweak_ptr<T> 的别名
+nstd::make_unique(Args...)  // nstd::make_noshared() 函数的别名
 ```
 
 ## 用法
 
-用法和 shared_ptr/weak_ptr 大致相同，除了一些例外情况 --
+本智能指针的用法和 shared_ptr/weak_ptr 大致相同，除了一些例外情况 --
 
 1. noshared_ptr 不可以复制.
    
@@ -81,8 +85,13 @@ nstd::observer_ptr<T>  // nstd::noweak_ptr<T> 的别名
     // lock()返回的 noshared_ptr，我们做了特别设计，它不同于直接创建的 noshared_ptr，两点不同
     //   1) 这里 std::move虽然不会编译报错，但是实际上 s3 不会有任何改动，仍保持对象的所有权
     //   2) s4 可以用来访问对象，但不拥有对象的所有权
-    // 这样能保障在 s3 离开作用域后，原来的 noshared_ptr 仍是对象唯一的拥有者。
 ```
+
+以上两点，保障了
+
+1. 初始创建的 noshared_ptr，具有对象的唯一所有权
+2. lock()返回的 noshared_ptr，具有对象的临时所有权。该所有权出了变量的花括号作用域即失效。并且不可被传播出去（仅限于花括号作用域的范围）。
+
 
 ## 例子
 

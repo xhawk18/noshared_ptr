@@ -1,6 +1,8 @@
 What's this ?
 =============
 
+[中文版文档 (chinese version)](Readme.zh-CN.md)
+
 noshared_ptr is the unsharable version of std::shared_ptr.
 
 <b><i>"After I used this library, 90% c++ memory bugs disappeared !"</i></b> <a href="https://github.com/xhawk18/noshared_ptr">- by TreeNewBee</a>

@@ -1,3 +1,5 @@
+/// @file: noshared.hpp
+/// @author: xhawk18
 #include <stdio.h>
 #include <list>
 #include "noshared.hpp"

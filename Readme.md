@@ -10,6 +10,8 @@ noshared_ptr 类似于 std::shared_ptr，但它是不可复制的。
 
 <b><i>"不要用shared_ptr分享一个指针，分享请用weak_ptr !"</i></b> <a href="https://github.com/xhawk18/noshared_ptr">- by NewBeeGui</a>
 
+------------
+
 ## 一些比较
 
 ### noshared_ptr 和 shared_ptr, unique_ptr 比较
@@ -33,10 +35,6 @@ noshared_ptr 类似于 std::shared_ptr，但它是不可复制的。
 | 可以复制？     | :x:                                       | :heavy_check_mark: |
 | 可以move？     | :exclamation:[说明](#noweak_ptr_lock) | :heavy_check_mark: |
 | 支持weak_ptr？ | :heavy_check_mark:                        | :x:                |
-
-
-
-------------
 
 ## Class 和 API
 

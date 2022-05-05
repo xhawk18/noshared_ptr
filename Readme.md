@@ -60,7 +60,7 @@ noshared_ptr 类似于 std::shared_ptr，但它是不可复制的。
 |----------------|-------------------------------------------|--------------------|
 | 可以复制？     | :x:                                       | :heavy_check_mark: |
 | 可以move？     | :exclamation:[说明](#noweak_ptr_lock) | :heavy_check_mark: |
-| 支持weak_ptr？ | :heavy_check_mark:                        | :x:                |
+| 支持weak_ptr？ | :heavy_check_mark:                        | :heavy_check_mark: |
 
 ## Class 和 API
 
